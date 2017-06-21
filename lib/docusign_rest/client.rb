@@ -1573,15 +1573,25 @@ module DocusignRest
       options[:content_type] ||= 'application/pdf'
       options[:file_name] ||= File.basename(options[:file_path])
       options[:file_extension] ||= File.extname(options[:file_name])[1..-1]
-
-      headers = {
-        'Content-Type' => options[:content_type],
-        'Content-Disposition' => "file; filename=\"#{options[:file_name]}\"; documentid=#{options[:document_id]}; fileExtension=\"#{options[:file_extension]}\""
-      }
-
-      uri = build_uri("/accounts/#{@acct_id}/envelopes/#{options[:envelope_id]}/documents/#{options[:document_id]}")
-      post_body = open(options[:file_path]).read
-
+      if options[:base64]
+        headers = {
+          'Content-Type' => 'application/json'
+        }
+        post_body = {
+          documentBase64: options[:file],
+          documentId: options[:document_id],
+          fileExtension: "pdf",
+          name: options[:file_name]
+        }.to_json
+      else
+        headers = {
+          'Content-Type' => options[:content_type],
+          'Content-Disposition' => "file; filename=\"#{options[:file_name]}\"; documentid=#{options[:document_id]}; fileExtension=\"#{options[:file_extension]}\""
+        }
+        post_body = open(options[:file_path]).read
+      end
+        uri = build_uri("/accounts/#{@acct_id}/envelopes/#{options[:envelope_id]}/documents/#{options[:document_id]}")
+        
       http = initialize_net_http_ssl(uri)
       request = Net::HTTP::Put.new(uri.request_uri, headers(headers))
       request.body = post_body
